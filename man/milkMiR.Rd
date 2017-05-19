@@ -11,5 +11,7 @@ milkMiR is a package to manage milk mid-infrared (MIR) spectra data
 \author{
 Tianfu Yang \email{tianfu@ualberta.ca}
 Zhiquan Wang \email{zhiquan@ualberta.ca}
+
+Maintainer: Tianfu Yang \email{tianfu@ualberta.ca}
 }
 
