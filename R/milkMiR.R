@@ -10,6 +10,7 @@
 #'
 #' @name milkMiR
 #' @docType package
+#' @import R6
 # @importFrom graphics axis plot points
 # @import dplyr
 
