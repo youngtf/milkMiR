@@ -14,4 +14,3 @@ Zhiquan Wang \email{zhiquan@ualberta.ca}
 
 Maintainer: Tianfu Yang \email{tianfu@ualberta.ca}
 }
-

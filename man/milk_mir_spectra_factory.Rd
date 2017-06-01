@@ -12,4 +12,3 @@ milk_mir_spectra_factory
 Generate a MilkMirSpectra object
 }
 \keyword{datasets}
-
