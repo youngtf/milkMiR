@@ -42,7 +42,7 @@ milk_mir_spectra_factory <- R6Class(
 
   public = list(
     print = function(...){
-      cat("MilkMirSpectra Object of", length(private$..barcode), "animals")
+      cat("<MilkMirSpectra Object of", length(private$..barcode), "animals>")
       invisible(self)
     },
 
