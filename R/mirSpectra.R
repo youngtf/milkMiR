@@ -7,7 +7,7 @@
 # Contents:
 # -----------------------------------------------------------------------------
 # To-do
-# 1. method to update time_sampling and time_processing
+# 1. method to update time_sampling and time_processing [CHECK]
 # 2. POSIX object for time data
 # -----------------------------------------------------------------------------
 
@@ -125,17 +125,17 @@ milk_mir_spectra_factory <- R6Class(
       message("Data have been writen into ", file_name)
     },
 
-    add_animal_id = function(id_matching){
-      # ID-MERGE ================================================
+    add_animal_id = function(id_matching, verbose = TRUE){
       idx.id    = match(private$..barcode,id_matching$BCD)
       private$..animal_id = id_matching$CID[idx.id]
-
-      cat(sum(!is.na(private$..animal_id)), "cow ID has been imported. \n")
-      if (sum(is.na(private$..animal_id)) > 0){
-        cat(sum(is.na(private$..animal_id)),
-            "BCD were not found in the matching info. \n")
+      if (verbose){
+        cat(" - ", sum(!is.na(private$..animal_id)),
+            "cow ID has been imported. \n")
+        if (sum(is.na(private$..animal_id)) > 0){
+          cat(" - ", sum(is.na(private$..animal_id)),
+              "BCD were not found in the matching info. \n")
+        }
       }
-      # =========================================================
       private$..n_invalid_bcd = sum(is.na(private$..animal_id))
     },
 
@@ -161,14 +161,17 @@ milk_mir_spectra_factory <- R6Class(
       }
     },
 
-    check_cow_id = function(valid_cow_id){
+    check_cow_id = function(valid_cow_id, verbose = TRUE){
       if_valid = private$..animal_id %in% valid_cow_id
       private$..animal_id[!if_valid] = "[INVALID]"
-      cat("Found", sum(!if_valid), "invalid cow ID. Labelled as [INVALID]. \n")
+      if(verbose){
+        cat(" - ", "Found", sum(!if_valid),
+            "invalid cow ID. Labelled as [INVALID]. \n")
+      }
       private$..n_invalid_cid = sum(!if_valid)
     },
 
-    remove_invalid_record = function(){
+    remove_invalid_record = function(verbose = TRUE){
       if_invalid = private$..animal_id == "[INVALID]"
       private$..barcode        = private$..barcode[!if_invalid]
       private$..animal_id      = private$..animal_id[!if_invalid]
@@ -178,7 +181,9 @@ milk_mir_spectra_factory <- R6Class(
       private$..time_analysis  = private$..time_analysis[!if_invalid]
       private$..spectra_matrix = private$..spectra_matrix[,!if_invalid]
       private$..notes          = private$..notes[,!if_invalid]
-      cat(sum(if_invalid), "records has been removed \n")
+      if(verbose){
+        cat(" - ", sum(if_invalid), "records has been removed \n")
+      }
       private$..n_removed_rec = sum(if_invalid)
     }
   ),
