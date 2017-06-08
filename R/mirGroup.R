@@ -29,12 +29,15 @@ milk_mir_group_factory <- R6Class(
     ..time_processing = NULL,         ## 1-3d after sampling, used in filenames
     ..time_analysis   = NULL,         ## read from file, real measuring time
     ..pin_number      = NULL,
-    ..spectra_matrix  = NULL
+    ..spectra_matrix  = NULL,
+    ..res_princomp    = NULL,
+    ..res_pc_var      = NULL
   ),
   public = list(
     print = function(){
       cat("<this is a MilkMirGroup object of ",private$..n_rec, "animals. \n")
     },
+
     include_spectra = function(new_spectra){
       private$..animal_id       = c(private$..animal_id,
                                     new_spectra$get_animal_id)
@@ -65,7 +68,16 @@ milk_mir_group_factory <- R6Class(
         private$..spectra_matrix = new_matrix
         private$..n_rec = new_n_rec
       }
+    },
 
+    analysis_pca = function(){
+      private$..res_princomp = princomp(spectra_group$get_spectra_matrix)
+
+      vars = private$..res_princomp$sdev^2
+      vars_prop = vars/sum(vars)
+      private$..res_pc_var = data.frame(SD = private$..res_princomp$sdev,
+                                        prop_var = vars_prop,
+                                        cumu_var = cumsum(vars_prop))
     }
   ),
   active = list(
@@ -89,6 +101,12 @@ milk_mir_group_factory <- R6Class(
     },
     get_spectra_matrix = function(){
       private$..spectra_matrix
+    },
+    get_res_princomp = function(){
+      private$..res_princomp
+    },
+    get_res_pc_var = function(){
+      private$..res_pc_var
     }
   )
 )

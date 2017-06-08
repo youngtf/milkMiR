@@ -46,8 +46,10 @@ milk_mir_spectra_factory <- R6Class(
       invisible(self)
     },
 
-    read_data_file = function(file_name, N_SPECTRA = 1060, verbose = TRUE){
-      message("Reading data from ", file_name)
+    read_data_file = function(file_name, N_SPECTRA = 1060, verbose = TRUE, show_message = TRUE){
+      if (show_message){
+        message("Reading data from ", file_name)
+      }
       data_headers = read.csv(file_name, header = F, check.names=F,
                               as.is = T,  na.string = "", nrows = 20)
       data_headers_noblank =
@@ -97,7 +99,7 @@ milk_mir_spectra_factory <- R6Class(
       private$..notes[is.na(private$..notes)] = ""
     },
 
-    write_data_file = function(file_name, use_animal_id = TRUE){
+    write_data_file = function(file_name, use_animal_id = TRUE, show_message = TRUE){
       if (use_animal_id){
         if (is.null(private$..animal_id)){
           stop("No animal id available")
@@ -122,7 +124,9 @@ milk_mir_spectra_factory <- R6Class(
       output_file = cbind(rownames_vec,output_file)
       colnames(output_file) = c("ID",ID)
       write.csv(output_file, file_name, row.names = F, quote = F, eol = "\r\n")
-      message("Data have been writen into ", file_name)
+      if (show_message){
+        message("Data have been writen into ", file_name)
+      }
     },
 
     add_animal_id = function(id_matching, verbose = TRUE){
