@@ -87,14 +87,34 @@ milk_mir_group_factory <- R6Class(
       private$..wave_length = 10000 / private$..wave_number
     },
 
-    draw_variability = function(){
+    remove_points = function(min_val, max_val, type = c("pin_number", "wave_number")){
+      match.arg(type)
+      if (type == "pin_number"){
+        if_remove = (private$..pin_number >= min_val) & (private$..pin_number <= max_val)
+      } else {
+        if_remove = (private$..wave_number >= min_val) & (private$..wave_number <= max_val)
+      }
+      private$..pin_number     = private$..pin_number[!if_remove]
+      private$..wave_number    = private$..wave_number[!if_remove]
+      private$..wave_length    = private$..wave_length[!if_remove]
+      private$..spectra_matrix = private$..spectra_matrix[,!if_remove]
+    },
+
+    draw_against_wave_number = function(y_value, y_lab, gp0 = ggplot(), print = TRUE, ...){
+      plot_data = data.frame(wave_number = spectra_group$get_wave_number,
+                             y_value = y_value)
+      h = gp0 +
+        geom_line(data = plot_data, aes(wave_number, y_value), ...) +
+        labs(y = y_lab)
+
+      if (print) print(h)
+      return(h)
+    },
+
+    draw_variability = function(print = TRUE, ...){
       coef_var = apply(spectra_group$get_spectra_matrix, 2, sd) /
         colMeans(spectra_group$get_spectra_matrix)
-      plot_data = data.frame(wave_number = spectra_group$get_wave_number,
-                             CV = coef_var)
-      h = ggplot(plot_data, aes(wave_number, CV)) + geom_line()
-      print(h)
-      return(h)
+      self$draw_against_wave_number(coef_var, "CV", ...)
     }
   ),
   active = list(
