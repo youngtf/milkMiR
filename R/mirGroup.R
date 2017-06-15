@@ -80,11 +80,21 @@ milk_mir_group_factory <- R6Class(
       private$..res_pc_var = data.frame(SD = private$..res_princomp$sdev,
                                         prop_var = vars_prop,
                                         cumu_var = cumsum(vars_prop))
-    }
+    },
 
     calculate_wave = function(){
       private$..wave_number = private$..pin_number * 3.858
       private$..wave_length = 10000 / private$..wave_number
+    },
+
+    draw_variability = function(){
+      coef_var = apply(spectra_group$get_spectra_matrix, 2, sd) /
+        colMeans(spectra_group$get_spectra_matrix)
+      plot_data = data.frame(wave_number = spectra_group$get_wave_number,
+                             CV = coef_var)
+      h = ggplot(plot_data, aes(wave_number, CV)) + geom_line()
+      print(h)
+      return(h)
     }
   ),
   active = list(

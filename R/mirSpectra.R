@@ -86,7 +86,7 @@ milk_mir_spectra_factory <- R6Class(
       data_spectra = read.csv(file_name, header = F, check.names=F,
                               skip = pin_number_row_index, row.names = 1,
                               as.is = T,  na.string = "")
-      private$..pin_number = rownames(data_spectra)[1:N_SPECTRA]
+      private$..pin_number = as.integer(rownames(data_spectra)[1:N_SPECTRA])
       if (any(private$..pin_number != 240:1299)){
         stop("Invalid pin number")
       }
