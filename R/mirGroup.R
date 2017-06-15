@@ -29,6 +29,8 @@ milk_mir_group_factory <- R6Class(
     ..time_processing = NULL,         ## 1-3d after sampling, used in filenames
     ..time_analysis   = NULL,         ## read from file, real measuring time
     ..pin_number      = NULL,
+    ..wave_number     = NULL,         ## Wave number = Pin number * 3.858
+    ..wave_length     = NULL,         ## Wavelength = 10000 / Wave number μm
     ..spectra_matrix  = NULL,
     ..res_princomp    = NULL,
     ..res_pc_var      = NULL
@@ -70,14 +72,19 @@ milk_mir_group_factory <- R6Class(
       }
     },
 
-    analysis_pca = function(){
-      private$..res_princomp = princomp(spectra_group$get_spectra_matrix)
+    analysis_pca = function(...){
+      private$..res_princomp = princomp(spectra_group$get_spectra_matrix, ...)
 
       vars = private$..res_princomp$sdev^2
       vars_prop = vars/sum(vars)
       private$..res_pc_var = data.frame(SD = private$..res_princomp$sdev,
                                         prop_var = vars_prop,
                                         cumu_var = cumsum(vars_prop))
+    }
+
+    calculate_wave = function(){
+      private$..wave_number = private$..pin_number * 3.858
+      private$..wave_length = 10000 / private$..wave_number
     }
   ),
   active = list(
@@ -98,6 +105,12 @@ milk_mir_group_factory <- R6Class(
     },
     get_pin_number = function(){
       private$..pin_number
+    },
+    get_wave_number      = function(){
+      private$..wave_number
+    },
+    get_wave_length      = function(){
+      private$..wave_length
     },
     get_spectra_matrix = function(){
       private$..spectra_matrix
