@@ -3,3 +3,4 @@
 export(milk_mir_group_factory)
 export(milk_mir_spectra_factory)
 import(R6)
+import(ggplot2)

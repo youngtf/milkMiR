@@ -73,7 +73,7 @@ milk_mir_group_factory <- R6Class(
     },
 
     analysis_pca = function(...){
-      private$..res_princomp = princomp(spectra_group$get_spectra_matrix, ...)
+      private$..res_princomp = princomp(private$..spectra_matrix, ...)
 
       vars = private$..res_princomp$sdev^2
       vars_prop = vars/sum(vars)
@@ -101,7 +101,7 @@ milk_mir_group_factory <- R6Class(
     },
 
     draw_against_wave_number = function(y_value, y_lab, gp0 = ggplot(), print = TRUE, ...){
-      plot_data = data.frame(wave_number = spectra_group$get_wave_number,
+      plot_data = data.frame(wave_number = private$..wave_number,
                              y_value = y_value)
       h = gp0 +
         geom_line(data = plot_data, aes(wave_number, y_value), ...) +
@@ -112,8 +112,8 @@ milk_mir_group_factory <- R6Class(
     },
 
     draw_variability = function(print = TRUE, ...){
-      coef_var = apply(spectra_group$get_spectra_matrix, 2, sd) /
-        colMeans(spectra_group$get_spectra_matrix)
+      coef_var = apply(private$..spectra_matrix, 2, sd) /
+        colMeans(private$..spectra_matrix)
       self$draw_against_wave_number(coef_var, "CV", ...)
     }
   ),

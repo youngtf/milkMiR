@@ -11,6 +11,7 @@
 #' @name milkMiR
 #' @docType package
 #' @import R6
+#' @import ggplot2
 # @importFrom graphics axis plot points
 # @import dplyr
 
