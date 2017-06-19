@@ -18,6 +18,12 @@
 #' @export
 #' @format An \code{\link{R6Class}} generator object
 # -----------------------------------------------------------------------------
+# plot test
+
+# -----------------------------------------------------------------------------
+
+
+
 
 # Define microwave_oven_factory
 milk_mir_group_factory <- R6Class(
@@ -33,7 +39,23 @@ milk_mir_group_factory <- R6Class(
     ..wave_length     = NULL,         ## Wavelength = 10000 / Wave number μm
     ..spectra_matrix  = NULL,
     ..res_princomp    = NULL,
-    ..res_pc_var      = NULL
+    ..res_pc_var      = NULL,
+    ..SPECTRA_REGIONS = data.frame(
+      Filter	     = c("Carbohydrates",   "Total Solids","Carbohydrates Ref",
+                      "Citric Acid",	    "Fat C/Urea",  "Protein Reference",
+                      "Protein",         "Fat A",       "Fat A reference",
+                      "Fat B reference", "Fat B",       "Homogenisation"),
+      Abbreviation = c("Carb","TS","Carbr","Ci","FC","Pr",
+                       "Ps","FAs","FAr","FBr","FBs","Hom"),
+      pin_min	     = c(270, 305, 333, 357, 377, 384,
+                       393, 448, 462, 726, 736, 991),
+      pin_max	     = c(274, 307, 339, 361, 381, 387,
+                       397, 452, 466, 732, 742, 1001),
+      wave_min     = c(1041,1176,1284,1377,1454,1481,
+                       1515,1727,1781,2799,2838,3821),
+      wave_max     = c(1056,1184,1307,1392,1469,1492,
+                       1531,1743,1797,2822,2861,3860),
+      stringsAsFactors = FALSE)
   ),
   public = list(
     print = function(){
@@ -100,15 +122,32 @@ milk_mir_group_factory <- R6Class(
       private$..spectra_matrix = private$..spectra_matrix[,!if_remove]
     },
 
-    draw_against_wave_number = function(y_value, y_lab, gp0 = ggplot(), print = TRUE, ...){
+    draw_against_wave_number = function(y_value,
+                                        y_lab,
+                                        gp0 = ggplot(),
+                                        print = TRUE, ...){
       plot_data = data.frame(wave_number = private$..wave_number,
                              y_value = y_value)
       h = gp0 +
         geom_line(data = plot_data, aes(wave_number, y_value), ...) +
-        labs(y = y_lab)
+        labs(y = y_lab) +
+        theme_minimal()
 
       if (print) print(h)
       return(h)
+    },
+
+    draw_anno_regions = function(region = private$..SPECTRA_REGIONS,
+                                 gp0 = ggplot(),
+                                 print = TRUE
+                                 ){
+        rect_data = cbind(region, ymin = -Inf, ymax = Inf)
+        h = gp0 +
+          geom_rect(data = rect_data,
+                    aes(xmin = wave_min, xmax = wave_max,
+                        ymin = ymin, ymax = ymax))
+        if (print) print(h)
+        return(h)
     },
 
     draw_variability = function(print = TRUE, ...){
@@ -153,5 +192,3 @@ milk_mir_group_factory <- R6Class(
     }
   )
 )
-# Make a new object
-# a_new_object <- r6_class_factory$new()
