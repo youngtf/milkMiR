@@ -18,11 +18,22 @@
 #' @export
 #' @format An \code{\link{R6Class}} generator object
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Make a new object
+test_mir_file <- milk_mir_spectra_factory$new()
+test_mir_file$read_data_file(file_name = "tests/testthat/test_spectra.csv")
+test_mir_file$add_animal_id(data.frame(CID = c(1001:1015, 1020:1035),
+                                       BCD   = c(   1:15,     20:35)))
+test_mir_file$check_cow_id(as.character(1001:1020))
+test_mir_file$remove_invalid_record()
+test_mir_file$write_data_file("sample_data/test_spectra_out_3.csv", T)
+# -----------------------------------------------------------------------------
 
 # Define milk_mir_spectra_factory
 milk_mir_spectra_factory <- R6Class(
   "MilkMirSpectra",
   private = list(
+    ## with length of sample_number          ===================================
     ..barcode         = NULL,
     ..animal_id       = NULL,
     ..number_in_ws    = NULL,
@@ -31,9 +42,13 @@ milk_mir_spectra_factory <- R6Class(
     ..time_sampling   = NULL,         ## sampling time
     ..time_processing = NULL,         ## 1-3d after sampling, used in filenames
     ..time_analysis   = NULL,         ## read from file, real measuring time
-    ..pin_number      = NULL,
-    ..spectra_matrix  = NULL,
     ..notes           = NULL,
+    ..parity          = NULL,
+    ## with length of pin_number             ===================================
+    ..pin_number      = NULL,
+    ## n_animals * n_pin_number              ===================================
+    ..spectra_matrix  = NULL,         ## n_pin_number * n_animals
+    ## single integers
     ..n_original_rec  = NULL,
     ..n_invalid_bcd   = NULL,         ## after check, how many bcd is invalid
     ..n_invalid_cid   = NULL,         ## after check, how many cid is invalid
@@ -45,8 +60,9 @@ milk_mir_spectra_factory <- R6Class(
       cat("<MilkMirSpectra Object of", length(private$..barcode), "animals>")
       invisible(self)
     },
-
-    read_data_file = function(file_name, N_SPECTRA = 1060, verbose = TRUE, show_message = TRUE){
+    ## Data I/O ================================================================
+    read_data_file  = function(file_name, N_SPECTRA = 1060, verbose = TRUE,
+                              show_message = TRUE){
       if (show_message){
         message("Reading data from ", file_name)
       }
@@ -98,8 +114,8 @@ milk_mir_spectra_factory <- R6Class(
       private$..notes = data_spectra[(N_SPECTRA+1):nrow(data_spectra),]
       private$..notes[is.na(private$..notes)] = ""
     },
-
-    write_data_file = function(file_name, use_animal_id = TRUE, show_message = TRUE){
+    write_data_file = function(file_name, use_animal_id = TRUE,
+                               show_message = TRUE){
       if (use_animal_id){
         if (is.null(private$..animal_id)){
           stop("No animal id available")
@@ -128,8 +144,9 @@ milk_mir_spectra_factory <- R6Class(
         message("Data have been writen into ", file_name)
       }
     },
-
-    add_animal_id = function(id_matching, verbose = TRUE){
+    ## Data I/O ================================================================
+    ## Sample info manipulation ================================================
+    add_animal_id     = function(id_matching, verbose = TRUE){
       idx.id    = match(private$..barcode,id_matching$BCD)
       private$..animal_id = id_matching$CID[idx.id]
       if (verbose){
@@ -142,29 +159,34 @@ milk_mir_spectra_factory <- R6Class(
       }
       private$..n_invalid_bcd = sum(is.na(private$..animal_id))
     },
-
     add_sampling_time = function(sampling_time){
       if (length(sampling_time) == 1){
         private$..time_sampling = rep(sampling_time, length(private$..barcode))
       } else {
         if (length(sampling_time) != length(private$..barcode)){
-          stop("The length of the input data does not match the data")
+          stop("The length of the input data does not match the current data")
         }
         private$..time_sampling = sampling_time
       }
     },
-
-    add_process_time = function(process_time){
+    add_process_time  = function(process_time){
       if (length(process_time) == 1){
         private$..time_processing = rep(process_time, length(private$..barcode))
       } else {
         if (length(process_time) != length(private$..barcode)){
-          stop("The length of the input data does not match the data")
+          stop("The length of the input data does not match the current data")
         }
         private$..time_processing = process_time
       }
     },
-
+    add_parity        = function(parity){
+      if (length(parity) != length(private$..barcode)){
+        stop("The length of the input data does not match the current data")
+      }
+      private$..parity = parity
+    },
+    ## Sample info manipulation ================================================
+    ## Data QC =================================================================
     check_cow_id = function(valid_cow_id, verbose = TRUE){
       if_valid = private$..animal_id %in% valid_cow_id
       private$..animal_id[!if_valid] = "[INVALID]"
@@ -174,7 +196,6 @@ milk_mir_spectra_factory <- R6Class(
       }
       private$..n_invalid_cid = sum(!if_valid)
     },
-
     remove_invalid_record = function(verbose = TRUE){
       if_invalid = private$..animal_id == "[INVALID]"
       private$..barcode        = private$..barcode[!if_invalid]
@@ -190,6 +211,7 @@ milk_mir_spectra_factory <- R6Class(
       }
       private$..n_removed_rec = sum(if_invalid)
     }
+    ## Data QC =================================================================
   ),
 
   active = list(
@@ -237,15 +259,9 @@ milk_mir_spectra_factory <- R6Class(
     },
     get_n_removed_rec   = function(){
       private$..n_removed_rec
+    },
+    get_parity          = function(){
+      private$..parity
     }
   )
 )
-
-# Make a new object
-# test_mir_file <- milk_mir_spectra_factory$new()
-# test_mir_file$read_data_file(file_name = "tests/testthat/test_spectra.csv")
-# test_mir_file$add_animal_id(data.frame(CID = c(1001:1015, 1020:1035),
-#                                        BCD   = c(   1:15,     20:35)))
-# test_mir_file$check_cow_id(as.character(1001:1020))
-# test_mir_file$remove_invalid_record()
-# test_mir_file$write_data_file("sample_data/test_spectra_out_3.csv", T)

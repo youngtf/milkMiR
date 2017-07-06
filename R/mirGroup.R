@@ -18,50 +18,76 @@
 #' @export
 #' @format An \code{\link{R6Class}} generator object
 # -----------------------------------------------------------------------------
-# plot test
-
 # -----------------------------------------------------------------------------
-
-
-
+# plot test
+# spectra_group = milk_mir_group_factory$new()
+#
+# test_mir_file = milk_mir_spectra_factory$new()
+# test_mir_file$read_data_file(file_name = "tests/testthat/test_spectra.csv")
+# test_mir_file$add_animal_id(data.frame(CID = 101:129,BCD = 1:29,
+#                                        stringsAsFactors = F))
+# test_mir_file$check_cow_id(101:129)
+# test_mir_file$remove_invalid_record()
+#
+# spectra_group$include_spectra(test_mir_file)
+# spectra_group$calculate_wave()
+# a = spectra_group$draw_variability()
+# a = spectra_group$draw_against_wave_number(
+#          y_value = -log(spectra_group$get_spectra_matrix[1,]),
+#          y_lab = "abs")
+# spectra_group$draw_anno_regions(gp0 = a)
+# -----------------------------------------------------------------------------
 
 # Define microwave_oven_factory
 milk_mir_group_factory <- R6Class(
   "MilkMirGroup",
   private = list(
     ..n_rec           = 0,
+    ## with length of sample_number          ===================================
     ..animal_id       = NULL,
     ..time_sampling   = NULL,         ## sampling time
     ..time_processing = NULL,         ## 1-3d after sampling, used in filenames
     ..time_analysis   = NULL,         ## read from file, real measuring time
+    ..parity          = NULL,
+    ## with length of pin_number             ===================================
     ..pin_number      = NULL,
     ..wave_number     = NULL,         ## Wave number = Pin number * 3.858
     ..wave_length     = NULL,         ## Wavelength = 10000 / Wave number μm
+    ## n_pin_number * n_animals              ===================================
     ..spectra_matrix  = NULL,
+    ## list
     ..res_princomp    = NULL,
     ..res_pc_var      = NULL,
+    ## df, each with length of sample_number ===================================
+    ..pheno.df        = data.frame(),
+    ## list                                  ===================================
+    ..pheno.list      = list(),
+    ## CONSTANTS                             ===================================
     ..SPECTRA_REGIONS = data.frame(
-      Filter	     = c("Carbohydrates",   "Total Solids","Carbohydrates Ref",
-                      "Citric Acid",	    "Fat C/Urea",  "Protein Reference",
-                      "Protein",         "Fat A",       "Fat A reference",
-                      "Fat B reference", "Fat B",       "Homogenisation"),
-      Abbreviation = c("Carb","TS","Carbr","Ci","FC","Pr",
-                       "Ps","FAs","FAr","FBr","FBs","Hom"),
-      pin_min	     = c(270, 305, 333, 357, 377, 384,
-                       393, 448, 462, 726, 736, 991),
-      pin_max	     = c(274, 307, 339, 361, 381, 387,
-                       397, 452, 466, 732, 742, 1001),
-      wave_min     = c(1041,1176,1284,1377,1454,1481,
-                       1515,1727,1781,2799,2838,3821),
-      wave_max     = c(1056,1184,1307,1392,1469,1492,
-                       1531,1743,1797,2822,2861,3860),
-      stringsAsFactors = FALSE)
+        Filter	     = c("Carbohydrates",   "Total Solids","Carbohydrates Ref",
+                        "Citric Acid",	    "Fat C/Urea",  "Protein Reference",
+                        "Protein",         "Fat A",       "Fat A reference",
+                        "Fat B reference", "Fat B",       "Homogenisation"),
+        Abbreviation = c("Carb","TS","Carbr","Ci","FC","Pr",
+                         "Ps","FAs","FAr","FBr","FBs","Hom"),
+        pin_min	     = c(270, 305, 333, 357, 377, 384,
+                         393, 448, 462, 726, 736, 991),
+        pin_max	     = c(274, 307, 339, 361, 381, 387,
+                         397, 452, 466, 732, 742, 1001),
+        wave_min     = c(1041,1176,1284,1377,1454,1481,
+                         1515,1727,1781,2799,2838,3821),
+        wave_max     = c(1056,1184,1307,1392,1469,1492,
+                         1531,1743,1797,2822,2861,3860),
+        stringsAsFactors = FALSE
+    ## End                                   ===================================
+    )
   ),
   public = list(
     print = function(){
       cat("<this is a MilkMirGroup object of ",private$..n_rec, "animals. \n")
     },
 
+    ## Data I/O ================================================================
     include_spectra = function(new_spectra){
       private$..animal_id       = c(private$..animal_id,
                                     new_spectra$get_animal_id)
@@ -93,7 +119,9 @@ milk_mir_group_factory <- R6Class(
         private$..n_rec = new_n_rec
       }
     },
+    ## Data I/O ================================================================
 
+    ## Analysis ================================================================
     analysis_pca = function(...){
       private$..res_princomp = princomp(private$..spectra_matrix, ...)
 
@@ -103,25 +131,32 @@ milk_mir_group_factory <- R6Class(
                                         prop_var = vars_prop,
                                         cumu_var = cumsum(vars_prop))
     },
+    ## Analysis ================================================================
 
+    ## Spectra manipulation ====================================================
     calculate_wave = function(){
       private$..wave_number = private$..pin_number * 3.858
       private$..wave_length = 10000 / private$..wave_number
     },
 
-    remove_points = function(min_val, max_val, type = c("pin_number", "wave_number")){
+    remove_points = function(min_val, max_val,
+                             type = c("pin_number", "wave_number")){
       match.arg(type)
       if (type == "pin_number"){
-        if_remove = (private$..pin_number >= min_val) & (private$..pin_number <= max_val)
+        if_remove = (private$..pin_number >= min_val) &
+          (private$..pin_number <= max_val)
       } else {
-        if_remove = (private$..wave_number >= min_val) & (private$..wave_number <= max_val)
+        if_remove = (private$..wave_number >= min_val) &
+          (private$..wave_number <= max_val)
       }
       private$..pin_number     = private$..pin_number[!if_remove]
       private$..wave_number    = private$..wave_number[!if_remove]
       private$..wave_length    = private$..wave_length[!if_remove]
       private$..spectra_matrix = private$..spectra_matrix[,!if_remove]
     },
+    ## Spectra manipulation ====================================================
 
+    ## Visualization ===========================================================
     draw_against_wave_number = function(y_value,
                                         y_lab,
                                         gp0 = ggplot(),
@@ -155,24 +190,28 @@ milk_mir_group_factory <- R6Class(
         colMeans(private$..spectra_matrix)
       self$draw_against_wave_number(coef_var, "CV", ...)
     }
+    ## Visualization ===========================================================
   ),
   active = list(
-    get_n_rec = function(){
+    get_n_rec            = function(){
       private$..n_rec
     },
-    get_animal_id = function(){
+    get_animal_id        = function(){
       private$..animal_id
     },
-    get_time_sampling = function(){
+    get_time_sampling    = function(){
       private$..time_sampling
     },
-    get_time_processing = function(){
+    get_time_processing  = function(){
       private$..time_processing
     },
-    get_time_analysis = function(){
+    get_time_analysis    = function(){
       private$..time_analysis
     },
-    get_pin_number = function(){
+    get_parity           = function(){
+      private$..parity
+    },
+    get_pin_number       = function(){
       private$..pin_number
     },
     get_wave_number      = function(){
@@ -181,14 +220,20 @@ milk_mir_group_factory <- R6Class(
     get_wave_length      = function(){
       private$..wave_length
     },
-    get_spectra_matrix = function(){
+    get_spectra_matrix   = function(){
       private$..spectra_matrix
     },
-    get_res_princomp = function(){
+    get_res_princomp     = function(){
       private$..res_princomp
     },
-    get_res_pc_var = function(){
+    get_res_pc_var       = function(){
       private$..res_pc_var
+    },
+    get_pheno_df         = function(){
+      private$..pheno.df
+    },
+    get_pheno_list       = function(){
+      private$..pheno.list
     }
   )
 )
