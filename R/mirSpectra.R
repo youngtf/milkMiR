@@ -84,10 +84,10 @@ milk_mir_spectra_factory <- R6Class(
         warnings("- - something may be wrong on the meta info rows")
       }
       private$..barcode       = as.character(as.integer(data_headers_noblank[1, -1]))
-      private$..number_in_ws  = data_headers_noblank[2, -1]
-      private$..number_in_job = data_headers_noblank[3, -1]
-      private$..number_sub    = data_headers_noblank[4, -1]
-      private$..time_analysis = data_headers_noblank[5, -1]
+      private$..number_in_ws  = as.character(data_headers_noblank[2, -1])
+      private$..number_in_job = as.character(data_headers_noblank[3, -1])
+      private$..number_sub    = as.character(data_headers_noblank[4, -1])
+      private$..time_analysis = as.character(data_headers_noblank[5, -1])
 
       # check Pin Number row
       if(verbose) cat(" - Reading meta info... \n")
@@ -198,14 +198,19 @@ milk_mir_spectra_factory <- R6Class(
     },
     remove_invalid_record = function(verbose = TRUE){
       if_invalid = private$..animal_id == "[INVALID]"
-      private$..barcode        = private$..barcode[!if_invalid]
-      private$..animal_id      = private$..animal_id[!if_invalid]
-      private$..number_in_ws   = private$..number_in_ws[!if_invalid]
-      private$..number_in_job  = private$..number_in_job[!if_invalid]
-      private$..number_sub     = private$..number_sub[!if_invalid]
-      private$..time_analysis  = private$..time_analysis[!if_invalid]
-      private$..spectra_matrix = private$..spectra_matrix[,!if_invalid]
-      private$..notes          = private$..notes[,!if_invalid]
+      private$..barcode          = private$..barcode[!if_invalid]
+      private$..animal_id        = private$..animal_id[!if_invalid]
+      private$..number_in_ws     = private$..number_in_ws[!if_invalid]
+      private$..number_in_job    = private$..number_in_job[!if_invalid]
+      private$..number_sub       = private$..number_sub[!if_invalid]
+      private$..time_sampling    = private$..time_sampling[!if_invalid]
+      private$..time_processing  = private$..time_processing[!if_invalid]
+      private$..time_analysis    = private$..time_analysis[!if_invalid]
+      private$..spectra_matrix   = private$..spectra_matrix[,!if_invalid]
+      private$..notes            = private$..notes[,!if_invalid]
+      if(!is.null(private$..parity)){
+        warning("should check id before add parity info.")
+      }
       if(verbose){
         cat(" - ", sum(if_invalid), "records has been removed \n")
       }

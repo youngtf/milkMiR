@@ -43,26 +43,26 @@ milk_mir_group_factory <- R6Class(
   "MilkMirGroup",
   private = list(
     ..n_rec           = 0,
-    ## with length of sample_number          ===================================
+    ## with length of sample_number          ==================================
     ..animal_id       = NULL,
     ..time_sampling   = NULL,         ## sampling time
     ..time_processing = NULL,         ## 1-3d after sampling, used in filenames
     ..time_analysis   = NULL,         ## read from file, real measuring time
     ..parity          = NULL,
-    ## with length of pin_number             ===================================
+    ## with length of pin_number             ==================================
     ..pin_number      = NULL,
     ..wave_number     = NULL,         ## Wave number = Pin number * 3.858
     ..wave_length     = NULL,         ## Wavelength = 10000 / Wave number μm
-    ## n_pin_number * n_animals              ===================================
+    ## n_pin_number * n_animals              ==================================
     ..spectra_matrix  = NULL,
-    ## list
+    ## list                                  ==================================
     ..res_princomp    = NULL,
     ..res_pc_var      = NULL,
-    ## df, each with length of sample_number ===================================
-    ..pheno.df        = data.frame(),
-    ## list                                  ===================================
-    ..pheno.list      = list(),
-    ## CONSTANTS                             ===================================
+    ## df, each with length of sample_number ==================================
+    ..pheno_df        = data.frame(),
+    ## list                                  ==================================
+    ..pheno_list      = list(),
+    ## CONSTANTS                             ==================================
     ..SPECTRA_REGIONS = data.frame(
         Filter	     = c("Carbohydrates",   "Total Solids","Carbohydrates Ref",
                         "Citric Acid",	    "Fat C/Urea",  "Protein Reference",
@@ -79,7 +79,7 @@ milk_mir_group_factory <- R6Class(
         wave_max     = c(1056,1184,1307,1392,1469,1492,
                          1531,1743,1797,2822,2861,3860),
         stringsAsFactors = FALSE
-    ## End                                   ===================================
+    ## End                                   ==================================
     )
   ),
   public = list(
@@ -97,7 +97,8 @@ milk_mir_group_factory <- R6Class(
                                     new_spectra$get_time_processing)
       private$..time_analysis   = c(private$..time_analysis,
                                     new_spectra$get_time_analysis)
-
+      private$..parity          = c(private$..parity,
+                                    new_spectra$get_parity)
       ## pin number
       if (is.null(private$..pin_number)){
         private$..pin_number = new_spectra$get_pin_number
@@ -119,6 +120,75 @@ milk_mir_group_factory <- R6Class(
         private$..n_rec = new_n_rec
       }
     },
+
+    add_pheno_col = function(key, data_vecter){
+      if(length(data_vecter) != private$..n_rec){
+        stop("The length of the vecter is not the same as the number of total records.")
+      }
+      private$..pheno_df[[key]] = data_vecter
+    },
+
+    add_pheno_list = function(key, data){
+      private$..pheno_list[[key]] = data
+    },
+
+    export_data_frame = function(spectra = c("full","pca"),
+                                 top_pcs = NULL,
+                                 include_pheno_list = T){
+      spectra = match.arg(spectra)
+      attr_list = list()
+      attr_list$spectra_type = spectra
+
+      ### Spectra data
+      if (spectra == "full"){
+        data_spectra = private$..spectra_matrix
+        colnames(data_spectra) = paste0("PIN_", private$..pin_number)
+        attr_list$wave_number = private$..wave_number
+        attr_list$pin_number = private$..pin_number
+      } else {
+        if (is.null(private$..res_princomp)){
+          stop("PCA has not been conducted")
+        }
+
+        data_spectra = private$..res_princomp$scores
+        colnames(data_spectra) = paste0("PC_", 1:length(private$..pin_number))
+        attr_list$var_pca = private$..res_pc_var$prop_var
+
+        if(!is.null(top_pcs)){
+          if(!is.integer(top_pcs)){
+            stop("top_pcs should be an integer")
+          }
+          data_spectra = data_spectra[,1:top_pcs]
+          attr_list$var_pca = attr_list$var_pca[1:top_pcs]
+        }
+      }
+
+      ### Phenotype data
+      data_pheno = data.frame(CID       = private$..animal_id,
+                              Samp_time = private$..time_sampling,
+                              Proc_time = private$..time_processing,
+                              Ana_time  = private$..time_analysis,
+                              Parity    = private$..parity,
+                              stringsAsFactors = FALSE)
+
+      if (length(private$..pheno_df) > 0){
+        data_pheno = cbind(data_pheno, private$..pheno_df)
+      }
+
+      ### Pheno list
+      if (include_pheno_list)
+        attr_list$pheno_list = private$..pheno_list
+
+      if (nrow(data_pheno) != nrow(data_spectra)){
+        print(nrow(data_pheno), )
+        stop(paste("The number of phenotype records is different",
+                    "from the number of spectra records."))
+      }
+      data_all = cbind(data_pheno, data_spectra)
+      attributes(data_all) = c(attributes(data_all), attr_list)
+      return(data_all)
+    },
+
     ## Data I/O ================================================================
 
     ## Analysis ================================================================
@@ -230,10 +300,10 @@ milk_mir_group_factory <- R6Class(
       private$..res_pc_var
     },
     get_pheno_df         = function(){
-      private$..pheno.df
+      private$..pheno_df
     },
     get_pheno_list       = function(){
-      private$..pheno.list
+      private$..pheno_list
     }
   )
 )
