@@ -53,7 +53,7 @@ milk_mir_group_factory <- R6Class(
     ..pin_number      = NULL,
     ..wave_number     = NULL,         ## Wave number = Pin number * 3.858
     ..wave_length     = NULL,         ## Wavelength = 10000 / Wave number μm
-    ## n_pin_number * n_animals              ==================================
+    ## n_animals * n_pin_number              ==================================
     ..spectra_matrix  = NULL,
     ## list                                  ==================================
     ..res_princomp    = NULL,
@@ -210,7 +210,13 @@ milk_mir_group_factory <- R6Class(
     },
 
     remove_points = function(min_val, max_val,
-                             type = c("pin_number", "wave_number")){
+                             type = c("pin_number", "wave_number"),
+                             copy_checked = F){
+      if (!copy_checked){
+        stop("This function will remove data. Please check the following actions:",
+             "\n 1) Get a deep copy first.",
+             "\n 2) set the copy_checked option to TRUE.")
+      }
       match.arg(type)
       if (type == "pin_number"){
         if_remove = (private$..pin_number >= min_val) &
@@ -223,6 +229,30 @@ milk_mir_group_factory <- R6Class(
       private$..wave_number    = private$..wave_number[!if_remove]
       private$..wave_length    = private$..wave_length[!if_remove]
       private$..spectra_matrix = private$..spectra_matrix[,!if_remove]
+    },
+    
+    remove_samples = function(index_remove, copy_checked = F){
+      if (!copy_checked){
+        stop("This function will remove data. Please check the following actions:",
+             "\n 1) Get a deep copy first.",
+             "\n 2) set the copy_checked option to TRUE.")
+      }
+      ## check index
+      if (any(index_remove) > private$..n_rec){
+        stop("Index out of bound.")
+      }
+      private$..animal_id       = private$..animal_id[-index_remove]
+      private$..time_sampling   = private$..time_sampling[-index_remove]
+      private$..time_processing = private$..time_processing[-index_remove]
+      private$..time_analysis   = private$..time_analysis[-index_remove]
+      private$..parity          = private$..parity[-index_remove]
+      private$..n_rec           = length(private$..animal_id)
+      
+      private$..spectra_matrix  = private$..spectra_matrix[-index_remove,]
+      
+      private$..res_princomp    = NULL
+      private$..res_pc_var      = NULL
+      private$..pheno_df        = private$..pheno_df[-index_remove,]
     },
     ## Spectra manipulation ====================================================
 
