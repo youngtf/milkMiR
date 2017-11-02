@@ -79,8 +79,10 @@ milk_mir_group_factory <- R6Class(
         wave_max     = c(1056,1184,1307,1392,1469,1492,
                          1531,1743,1797,2822,2861,3860),
         stringsAsFactors = FALSE
+    ),
+    ..REMOVED_REGIONS_PIN = numeric(0),
+    ..REMOVED_REGIONS_WN  = numeric(0)
     ## End                                   ==================================
-    )
   ),
   public = list(
     print = function(){
@@ -180,7 +182,7 @@ milk_mir_group_factory <- R6Class(
         attr_list$pheno_list = private$..pheno_list
 
       if (nrow(data_pheno) != nrow(data_spectra)){
-        print(nrow(data_pheno), )
+        print(nrow(data_pheno))
         stop(paste("The number of phenotype records is different",
                     "from the number of spectra records."))
       }
@@ -225,6 +227,11 @@ milk_mir_group_factory <- R6Class(
         if_remove = (private$..wave_number >= min_val) &
           (private$..wave_number <= max_val)
       }
+      
+      private$..REMOVED_REGIONS_PIN = unique(c(private$..REMOVED_REGIONS_PIN, 
+                                               private$..pin_number[if_remove]))
+      private$..REMOVED_REGIONS_WN  = unique(c(private$..REMOVED_REGIONS_PIN, 
+                                               private$..wave_number[if_remove]))
       private$..pin_number     = private$..pin_number[!if_remove]
       private$..wave_number    = private$..wave_number[!if_remove]
       private$..wave_length    = private$..wave_length[!if_remove]
@@ -260,13 +267,41 @@ milk_mir_group_factory <- R6Class(
     draw_against_wave_number = function(y_value,
                                         y_lab,
                                         gp0 = ggplot(),
-                                        print = TRUE, ...){
-      plot_data = data.frame(wave_number = private$..wave_number,
+                                        print = TRUE, 
+                                        pin_lim = c(240, 1299),
+                                        wn_lim = pin_lim * 3.858,
+                                        ...){
+      plot_data = data.frame(pin_number  = private$..pin_number,
+                             wave_number = private$..wave_number,
                              y_value = y_value)
-      h = gp0 +
-        geom_line(data = plot_data, aes(wave_number, y_value), ...) +
-        labs(y = y_lab) +
-        theme_minimal()
+      
+      h = gp0
+      if(length(private$..REMOVED_REGIONS_WN) == 0){
+        h = h + geom_line(data = plot_data, aes(wave_number, y_value), ...)
+      } else {
+        plot_data_sorted = plot_data[order(plot_data$pin_number),]
+        pin_match = (pin_lim[1]:pin_lim[2]) %in% plot_data_sorted$pin_number
+        pin_match_recode = pin_match * 2 - 1
+        break_points = which(c(pin_match_recode,0) * c(0, pin_match_recode) == -1)
+        class_points = findInterval(1:length(pin_match_recode), 
+                                    break_points)[pin_match]
+        plot_data_sorted$plot_intervals = class_points
+        ### ==========================================================
+        # pin_1 = 2:80
+        # pin_2 = c(2:16, 30:50, 65:75)
+        # pin_match = (pin_1 %in% pin_2)
+        # pin_match_recode = pin_match * 2 - 1
+        # break_points = which(c(pin_match_recode,0) * c(0, pin_match_recode) == -1)
+        # class_points = findInterval(1:length(pin_match_recode), 
+        #                             break_points)[pin_1 %in% pin_2]
+        # data.frame(pin_2, class_points)
+        ### ==========================================================
+        for (i in unique(plot_data_sorted$plot_intervals)){
+          temp_data = plot_data_sorted[plot_data_sorted$plot_intervals == i,]
+          h = h + geom_line(data = temp_data, aes(wave_number, y_value), ...)
+        }
+      }
+      h = h + labs(y = y_lab) + theme_minimal()
 
       if (print) print(h)
       return(h)
@@ -334,6 +369,10 @@ milk_mir_group_factory <- R6Class(
     },
     get_pheno_list       = function(){
       private$..pheno_list
+    },
+    get_removed_region   = function(){
+      list(private$..REMOVED_REGIONS_PIN, 
+           private$..REMOVED_REGIONS_WN)
     }
   )
 )

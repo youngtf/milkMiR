@@ -26,7 +26,7 @@
 #                                        BCD   = c(   1:15,     20:35)))
 # test_mir_file$check_cow_id(as.character(1001:1020))
 # test_mir_file$remove_invalid_record()
-# test_mir_file$write_data_file("sample_data/test_spectra_out_3.csv", T)
+# test_mir_file$write_data_file("tests/testthat/test_spectra_out_3.csv", T)
 # -----------------------------------------------------------------------------
 
 # Define milk_mir_spectra_factory
